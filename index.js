@@ -11,15 +11,18 @@ function addPoint(repo) {
     point.classList.add('container__point')
     point.textContent = repo.name
     points.appendChild(point)
+
+    point.addEventListener("click", function(event) {
+        addRepo(repo);
+        search.value = '';
+        deletePoint();
+    })
+
 }
 
 function deletePoint() {
-    if (points.children.length !== 0) {
-        for (let i = 0; i < points.children.length; i++) {
-            while (points.firstChild) {
-                points.removeChild(points.firstChild);
-            }
-        }
+    while (points.firstChild) {
+        points.removeChild(points.firstChild);
     }
 }
     
@@ -43,7 +46,7 @@ function addRepo(item) {
         
     const deleteRepo = document.createElement('button')
     deleteRepo.classList.add('container__close')
-    deleteRepo.addEventListener('click', function () {
+    deleteRepo.addEventListener('click', function (event) {
         repo.remove()
     })
     repo.appendChild(textContent)
@@ -53,36 +56,19 @@ function addRepo(item) {
 
 
 
-async function getRepo() {
+async function getRepo(event) {
     try {
-        return await fetch (`https://api.github.com/search/repositories?q=${search.value}`)
-        .then((response) => {
-            return response.json()
+        const response = await fetch(`https://api.github.com/search/repositories?q=${event.target.value}&per_page=5`);
+        const json = await response.json();
+        const items = json.items;
+
+        deletePoint();
+
+        items.forEach(item => {
+            addPoint(item)
         })
-        .then((response) => {
-            let items = response.items;
-            deletePoint();
-            if (items.length >= 5) {
-                for (let i = 0; i < 5; i++) {
-                    addPoint(items[i]);
-                }
-            } else {
-                for (let item of items) {
-                    addPoint(item);
-                }
-            }
-            return items;
-        })
-        .then((response) => {
-            let points = document.querySelectorAll('.container__point')
-            for (let i = 0; i < points.length; i++) {
-                points[i].addEventListener("click", function() {
-                    addRepo(response[i]);
-                    search.value = "";
-                    deletePoint();
-                })
-            }
-        })
+
+
     } catch (err) {
         console.log(err);
     }
@@ -100,30 +86,6 @@ function debounce(fn, delay) {
     }
 }
 
-getRepoDebounce = debounce(getRepo, 500);
+const getRepoDebounce = debounce(getRepo, 500);
     
-search.addEventListener("input", getRepoDebounce);;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+search.addEventListener("input", getRepoDebounce);
